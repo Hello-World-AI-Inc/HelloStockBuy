@@ -2,6 +2,7 @@
 node_modules/
 frontend/.nuxt/
 frontend/.output/
+frontend/.pnpm-store
 
 # Python
 __pycache__/
