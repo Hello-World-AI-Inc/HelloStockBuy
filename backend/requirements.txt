@@ -1,0 +1,10 @@
+fastapi
+uvicorn
+ib_insync
+openai
+psycopg2-binary
+python-dotenv
+sqlalchemy
+alembic
+nest_asyncio
+yfinance 

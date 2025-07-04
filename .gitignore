@@ -1,0 +1,26 @@
+# Node
+node_modules/
+frontend/.nuxt/
+frontend/.output/
+
+# Python
+__pycache__/
+*.pyc
+backend/.venv/
+
+# Env
+.env
+.env.*
+
+# Docker
+*.pid
+db_data/
+
+# Postgres
+*.log
+*.pid
+pgdata/
+db/
+
+# VSCode
+.vscode/ 
