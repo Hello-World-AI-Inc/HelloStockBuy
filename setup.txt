@@ -1,0 +1,27 @@
+FINNHUB_API_KEY=d1jng3hr01qvg5gvl24gd1jng3hr01qvg5gvl250
+MARKETAUX_API_KEY=6bJzwmHUhizOJBAUubRu0YzSPtLZ2SUeKZ9IivC2
+FMP_API_KEY=S0Nu5IlBF7YDes3dnvuMsK2J59vFU14N
+NEWSAPI_API_KEY=2b37bc61f93140169388bb1f3dff4dff
+
+
+
+# Database Configuration
+POSTGRES_USER=postgres
+POSTGRES_PASSWORD=password
+POSTGRES_DB=stockbuy
+POSTGRES_HOST=db
+POSTGRES_PORT=5432
+
+# OpenAI Configuration
+OPENAI_API_KEY=your_openai_api_key_here
+
+# Gemini Configuration
+GEMINI_API_KEY=your_gemini_api_key_here
+
+# IBKR Configuration
+IBKR_HOST=host.docker.internal
+IBKR_PORT=4002
+
+
+# News fetch interval (in hours)
+NEWS_FETCH_INTERVAL_HOURS=2
