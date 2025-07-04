@@ -71,4 +71,19 @@ class MarketData(Base):
     high = Column(Float)
     low = Column(Float)
     open_price = Column(Float)
-    timestamp = Column(DateTime, default=datetime.utcnow) 
+    timestamp = Column(DateTime, default=datetime.utcnow)
+
+class News(Base):
+    __tablename__ = "news"
+
+    id = Column(Integer, primary_key=True, index=True)
+    symbol = Column(String, index=True)
+    title = Column(String)
+    summary = Column(Text)
+    link = Column(String)
+    publisher = Column(String)
+    published_at = Column(DateTime, index=True)
+    source = Column(String, index=True)  # e.g., 'yahoo', 'marketaux', etc.
+    score = Column(Float, nullable=True)  # Optional: sentiment or relevance score
+    raw_json = Column(Text, nullable=True)  # Store raw response for debugging/traceability
+    created_at = Column(DateTime, default=datetime.utcnow) 

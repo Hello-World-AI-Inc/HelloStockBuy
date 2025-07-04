@@ -3,13 +3,17 @@ from fastapi import FastAPI, HTTPException, Request, Body, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from ibkr_service import ibkr_service
-from market_data import get_market_data, get_current_source, set_current_source, MARKET_DATA_SOURCES
+from market_data import get_market_data, get_current_source, set_current_source, MARKET_DATA_SOURCES, get_all_news
 import asyncio
 from pydantic import BaseModel
 import os
 from dotenv import load_dotenv
 from typing import Dict, Any
 import logging
+from apscheduler.schedulers.background import BackgroundScheduler
+from sqlalchemy.orm import Session
+from database import get_db
+from models import News
 
 # Add dotenv support to load .env if present
 load_dotenv()
@@ -34,6 +38,10 @@ class NewsSourceRequest(BaseModel):
 # Global settings with defaults
 selected_market_data_source = os.getenv('MARKET_DATA_SOURCE', 'yahoo')
 selected_news_source = os.getenv('NEWS_SOURCE', 'yahoo')
+
+NEWS_FETCH_INTERVAL_HOURS = int(os.getenv('NEWS_FETCH_INTERVAL_HOURS', 2))
+
+scheduler = BackgroundScheduler()
 
 logger = logging.getLogger(__name__)
 
@@ -148,6 +156,46 @@ def set_news_source(request: NewsSourceRequest):
         'status': 'success',
         'available_sources': list(MARKET_DATA_SOURCES.keys())
     }
+
+@app.get('/news/all/{symbol}')
+async def get_all_news_endpoint(symbol: str):
+    """Get merged news for a symbol from all sources"""
+    try:
+        loop = asyncio.get_event_loop()
+        news = await loop.run_in_executor(None, lambda: get_all_news(symbol))
+        return {'symbol': symbol, 'news': news}
+    except Exception as e:
+        logger.error(f"Error getting all news for {symbol}: {e}")
+        raise HTTPException(status_code=500, detail=f"Error getting all news for {symbol}: {str(e)}")
+
+# Background job to fetch and store news for TSLA
+def fetch_and_store_news():
+    from market_data import get_all_news
+    from database import SessionLocal
+    session = SessionLocal()
+    symbol = 'TSLA'
+    news_items = get_all_news(symbol)
+    for item in news_items:
+        # Deduplicate by link
+        exists = session.query(News).filter_by(link=item['link']).first()
+        if not exists:
+            news = News(
+                symbol=symbol,
+                title=item.get('title'),
+                summary=item.get('summary'),
+                link=item.get('link'),
+                publisher=item.get('publisher'),
+                published_at=item.get('published_at'),
+                source=item.get('source'),
+                score=item.get('score'),
+                raw_json=item.get('raw_json'),
+            )
+            session.add(news)
+    session.commit()
+    session.close()
+
+scheduler.add_job(fetch_and_store_news, 'interval', hours=NEWS_FETCH_INTERVAL_HOURS, next_run_time=None)
+scheduler.start()
 
 if __name__ == "__main__":
     import uvicorn

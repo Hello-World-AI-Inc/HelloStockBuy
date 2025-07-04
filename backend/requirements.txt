@@ -7,4 +7,5 @@ python-dotenv
 sqlalchemy
 alembic
 nest_asyncio
-yfinance 
+yfinance
+apscheduler 

@@ -193,6 +193,27 @@
                 </div>
               </div>
             </div>
+            <!-- News Section -->
+            <div v-if="news.length" class="bg-gray-700 rounded-xl p-6 border border-gray-600 mt-6">
+              <h3 class="text-lg font-semibold text-white mb-4 flex items-center">
+                <svg class="w-5 h-5 mr-2 text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path>
+                </svg>
+                Latest News
+              </h3>
+              <ul>
+                <li v-for="item in news" :key="item.link" class="mb-4 pb-4 border-b border-gray-600 last:border-b-0 last:mb-0 last:pb-0">
+                  <a :href="item.link" target="_blank" class="text-blue-400 hover:underline font-semibold text-base">{{ item.title }}</a>
+                  <div class="text-xs text-gray-400 mt-1">
+                    {{ item.publisher }} |
+                    {{ formatNewsTime(item.published_at) }}
+                    <span v-if="item.score !== null && item.score !== undefined" class="mx-1">| <span class="font-bold text-yellow-300">Score: {{ item.score }}</span></span>
+                    | <span class="uppercase">{{ item.source }}</span>
+                  </div>
+                  <div class="text-sm text-gray-200 mt-2">{{ item.summary }}</div>
+                </li>
+              </ul>
+            </div>
           </div>
         </div>
 
@@ -316,6 +337,7 @@ const customSymbol = ref('AAPL')
 const refreshIntervals = [60, 180, 300]
 const selectedInterval = ref(60)
 let marketDataInterval = null
+const news = ref([])
 
 // Methods
 const connectIBKR = async () => {
@@ -337,6 +359,7 @@ const fetchMarketData = async () => {
   if (!symbol) return
   try {
     marketData.value = await $fetch(`${apiBaseUrl}/market-data/${symbol}`)
+    await fetchNews()
   } catch (error) {
     console.error('Failed to fetch market data:', error)
   }
@@ -473,12 +496,34 @@ const onIntervalChange = () => {
   startMarketDataInterval()
 }
 
+const fetchNews = async () => {
+  const symbol = customSymbol.value.trim()
+  if (!symbol) return
+  try {
+    const response = await $fetch(`${apiBaseUrl}/news/all/${symbol}`)
+    news.value = response.news || []
+  } catch (error) {
+    console.error('Failed to fetch news:', error)
+    news.value = []
+  }
+}
+
+const formatNewsTime = (timestamp) => {
+  if (!timestamp) return ''
+  const date = new Date(timestamp)
+  return date.toLocaleString()
+}
+
+// Fetch news when market data is fetched or symbol changes
+watch(customSymbol, fetchNews)
+
 onMounted(async () => {
   await fetchCurrentDataSource()
   await connectIBKR()
   await fetchAccountSummary()
   fetchMarketData()
   startMarketDataInterval()
+  fetchNews()
 })
 
 onUnmounted(() => {

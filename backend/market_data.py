@@ -6,6 +6,7 @@ import asyncio
 import requests
 from datetime import datetime, timedelta
 from dotenv import load_dotenv
+import json
 
 # Load environment variables
 load_dotenv()
@@ -58,17 +59,25 @@ class YahooFinanceSource(MarketDataSource):
         # Yahoo Finance news via yfinance
         ticker = yf.Ticker(symbol)
         news = ticker.news
-        return [
-            {
+        result = []
+        for n in news:
+            # providerPublishTime is a Unix timestamp (seconds)
+            published_at = None
+            if n.get('providerPublishTime'):
+                try:
+                    published_at = datetime.fromtimestamp(n['providerPublishTime']).isoformat()
+                except Exception:
+                    published_at = None
+            result.append({
                 'title': n.get('title'),
-                'publisher': n.get('publisher'),
+                'publisher': n.get('publisher'),  # This is the real publisher (e.g., SeekingAlpha)
                 'link': n.get('link'),
-                'providerPublishTime': n.get('providerPublishTime'),
-                'type': n.get('type'),
-                'summary': n.get('summary', '')
-            }
-            for n in news
-        ]
+                'published_at': published_at,
+                'source': 'yahoo',
+                'summary': n.get('summary', ''),
+                'raw_json': json.dumps(n)
+            })
+        return result
 
 # Finnhub implementation (free tier)
 class FinnhubSource(MarketDataSource):
@@ -124,38 +133,30 @@ class FinnhubSource(MarketDataSource):
             if not news:
                 logger.warning(f"No news found for {symbol}")
                 return []
-                
+            
             if not isinstance(news, list):
                 logger.error(f"Invalid response format from Finnhub for {symbol}. Expected list, got {type(news)}")
                 return []
-                
-            # Map Finnhub fields to our expected format
+            
             valid_news = []
             required_fields = {
-                'headline': ['headline', 'title'],  # Try multiple possible field names
+                'headline': ['headline', 'title'],
                 'datetime': ['datetime', 'time', 'timestamp'],
                 'summary': ['summary', 'description']
             }
-            
             for n in news:
-                # Try to find values using multiple possible field names
                 news_item = {}
                 valid = True
-                
                 for our_field, possible_fields in required_fields.items():
                     value = None
                     for field in possible_fields:
                         if field in n and n[field]:
                             value = n[field]
                             break
-                    
                     if value is None:
-                        logger.warning(f"Missing required field {our_field} in news item for {symbol}")
                         valid = False
                         break
-                    
                     news_item[our_field] = value
-                
                 if valid:
                     formatted_item = {
                         'title': news_item['headline'],
@@ -165,21 +166,14 @@ class FinnhubSource(MarketDataSource):
                         'type': 'news',
                         'summary': news_item['summary']
                     }
-                    
-                    # Additional validation for specific fields
                     if isinstance(formatted_item['providerPublishTime'], (int, float)):
-                        # Convert Unix timestamp to ISO format if needed
                         formatted_item['providerPublishTime'] = datetime.fromtimestamp(
                             formatted_item['providerPublishTime']
                         ).isoformat()
-                    
                     valid_news.append(formatted_item)
-            
             logger.info(f"Found {len(valid_news)} valid news items for {symbol}")
-            
-            # Sort by timestamp (newest first) and return top 10
             valid_news.sort(key=lambda x: x['providerPublishTime'], reverse=True)
-            return valid_news[:10]
+            return valid_news[:10] if valid_news else []
             
         except requests.exceptions.RequestException as e:
             logger.error(f"Finnhub news request error for {symbol}: {e}")
@@ -188,10 +182,153 @@ class FinnhubSource(MarketDataSource):
             logger.error(f"Unexpected error processing news for {symbol}: {e}")
             return []
 
-# Registry for sources
+# Marketaux implementation
+class MarketauxSource(MarketDataSource):
+    def __init__(self, api_key):
+        self.api_key = api_key
+        # Test if we have access to news endpoint
+        self._has_news_access = self._test_news_access()
+        
+    def _test_news_access(self):
+        """Test if the API key has access to the news endpoint"""
+        if not self.api_key:
+            return False
+        try:
+            url = f'https://api.marketaux.com/v1/news/all?symbols=AAPL&filter_entities=true&language=en&api_token={self.api_key}'
+            r = requests.get(url, timeout=5)
+            if r.status_code == 200:
+                logger.info("Marketaux news endpoint is accessible")
+                return True
+            elif r.status_code == 402:
+                logger.info("Marketaux news endpoint requires payment - skipping")
+                return False
+            else:
+                logger.warning(f"Marketaux news endpoint test returned status {r.status_code}")
+                return False
+        except Exception as e:
+            logger.warning(f"Marketaux news endpoint test failed: {e}")
+            return False
+            
+    def get_news(self, symbol: str):
+        if not self._has_news_access:
+            logger.debug(f"Skipping Marketaux news for {symbol} - no access to news endpoint")
+            return []
+            
+        url = f'https://api.marketaux.com/v1/news/all?symbols={symbol}&filter_entities=true&language=en&api_token={self.api_key}'
+        try:
+            r = requests.get(url)
+            r.raise_for_status()
+            data = r.json()
+            news = data.get('data', [])
+            result = []
+            for n in news:
+                result.append({
+                    'title': n.get('title'),
+                    'summary': n.get('description', ''),
+                    'link': n.get('url'),
+                    'publisher': n.get('source', {}).get('name', ''),
+                    'published_at': n.get('published_at'),
+                    'source': 'marketaux',
+                    'score': n.get('score'),
+                    'raw_json': json.dumps(n)
+                })
+            return result
+        except Exception as e:
+            logger.error(f"Marketaux error for {symbol}: {e}")
+            return []
+
+# Financial Modeling Prep implementation
+class FMPSource(MarketDataSource):
+    def __init__(self, api_key):
+        self.api_key = api_key
+        # Test if we have access to news endpoint
+        self._has_news_access = self._test_news_access()
+        
+    def _test_news_access(self):
+        """Test if the API key has access to the news endpoint"""
+        if not self.api_key:
+            return False
+        try:
+            url = f'https://financialmodelingprep.com/api/v3/stock_news?tickers=AAPL&limit=1&apikey={self.api_key}'
+            r = requests.get(url, timeout=5)
+            if r.status_code == 200:
+                logger.info("FMP news endpoint is accessible")
+                return True
+            elif r.status_code == 403:
+                logger.info("FMP news endpoint requires higher subscription tier - skipping")
+                return False
+            else:
+                logger.warning(f"FMP news endpoint test returned status {r.status_code}")
+                return False
+        except Exception as e:
+            logger.warning(f"FMP news endpoint test failed: {e}")
+            return False
+            
+    def get_news(self, symbol: str):
+        if not self._has_news_access:
+            logger.debug(f"Skipping FMP news for {symbol} - no access to news endpoint")
+            return []
+            
+        url = f'https://financialmodelingprep.com/api/v3/stock_news?tickers={symbol}&limit=50&apikey={self.api_key}'
+        try:
+            r = requests.get(url)
+            r.raise_for_status()
+            news = r.json()
+            result = []
+            for n in news:
+                result.append({
+                    'title': n.get('title'),
+                    'summary': n.get('text', ''),
+                    'link': n.get('url'),
+                    'publisher': n.get('site', ''),
+                    'published_at': n.get('publishedDate'),
+                    'source': 'fmp',
+                    'score': None,
+                    'raw_json': json.dumps(n)
+                })
+            return result
+        except Exception as e:
+            logger.error(f"FMP error for {symbol}: {e}")
+            return []
+
+# NewsAPI implementation
+class NewsAPISource(MarketDataSource):
+    def __init__(self, api_key):
+        self.api_key = api_key
+    def get_news(self, symbol: str):
+        url = f'https://newsapi.org/v2/everything?q={symbol}&sortBy=publishedAt&language=en&apiKey={self.api_key}'
+        try:
+            r = requests.get(url)
+            r.raise_for_status()
+            data = r.json()
+            news = data.get('articles', [])
+            result = []
+            for n in news:
+                result.append({
+                    'title': n.get('title'),
+                    'summary': n.get('description', ''),
+                    'link': n.get('url'),
+                    'publisher': n.get('source', {}).get('name', ''),
+                    'published_at': n.get('publishedAt'),
+                    'source': 'newsapi',
+                    'score': None,
+                    'raw_json': json.dumps(n)
+                })
+            return result
+        except Exception as e:
+            logger.error(f"NewsAPI error for {symbol}: {e}")
+            return []
+
+MARKETAUX_API_KEY = os.getenv('MARKETAUX_API_KEY', '')
+FMP_API_KEY = os.getenv('FMP_API_KEY', '')
+NEWSAPI_API_KEY = os.getenv('NEWSAPI_API_KEY', '')
+
 MARKET_DATA_SOURCES = {
     'yahoo': YahooFinanceSource(),
     'finnhub': FinnhubSource(api_key=os.getenv('FINNHUB_API_KEY', '')),
+    'marketaux': MarketauxSource(api_key=MARKETAUX_API_KEY),
+    'fmp': FMPSource(api_key=FMP_API_KEY),
+    'newsapi': NewsAPISource(api_key=NEWSAPI_API_KEY),
 }
 
 async def get_market_data(symbol: str):
@@ -213,3 +350,23 @@ async def get_market_data(symbol: str):
         if data is not None and 'open' not in data:
             data['open'] = None
         return data 
+
+def get_all_news(symbol: str):
+    all_news = []
+    for name, source in MARKET_DATA_SOURCES.items():
+        try:
+            news = source.get_news(symbol)
+            if news:
+                all_news.extend(news)
+        except Exception as e:
+            logger.error(f"Error fetching news from {name} for {symbol}: {e}")
+    # Deduplicate by link
+    seen = set()
+    deduped = []
+    for n in all_news:
+        if n['link'] and n['link'] not in seen:
+            deduped.append(n)
+            seen.add(n['link'])
+    # Sort by published_at desc
+    deduped.sort(key=lambda x: x.get('published_at', ''), reverse=True)
+    return deduped 
