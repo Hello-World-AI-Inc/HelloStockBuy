@@ -29,8 +29,6 @@ services:
       - GEMINI_API_KEY=${GEMINI_API_KEY}
       - IBKR_HOST=${IBKR_HOST}
       - IBKR_PORT=${IBKR_PORT}
-      - IBKR_USER=${IBKR_USER}
-      - IBKR_PASSWORD=${IBKR_PASSWORD}
       - MARKET_DATA_SOURCE=yahoo
     depends_on:
       - db
