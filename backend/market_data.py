@@ -7,11 +7,22 @@ import requests
 from datetime import datetime, timedelta
 from dotenv import load_dotenv
 import json
+from news_scheduler import news_scheduler
+import pytz
 
 # Load environment variables
 load_dotenv()
 
 logger = logging.getLogger(__name__)
+
+# Set timezone
+TIMEZONE = os.getenv('TZ', 'Canada/Vancouver')
+try:
+    tz = pytz.timezone(TIMEZONE)
+    logger.info(f"Market data timezone set to: {TIMEZONE}")
+except Exception as e:
+    logger.warning(f"Invalid timezone {TIMEZONE}, using UTC: {e}")
+    tz = pytz.UTC
 
 # Global variable for current data source
 _current_source = os.getenv('MARKET_DATA_SOURCE', 'ibkr').lower()
@@ -61,20 +72,44 @@ class YahooFinanceSource(MarketDataSource):
         news = ticker.news
         result = []
         for n in news:
-            # providerPublishTime is a Unix timestamp (seconds)
+            # Parse the nested content structure
+            content = n.get('content', {})
+            
+            # Extract title from content
+            title = content.get('title')
+            
+            # Extract publisher from provider
+            provider = content.get('provider', {})
+            publisher = provider.get('displayName', 'Yahoo Finance')
+            
+            # Extract link from canonicalUrl or clickThroughUrl
+            canonical_url = content.get('canonicalUrl', {})
+            click_through_url = content.get('clickThroughUrl', {})
+            link = canonical_url.get('url') or click_through_url.get('url') or n.get('link')
+            
+            # Extract published date
             published_at = None
-            if n.get('providerPublishTime'):
+            pub_date = content.get('pubDate') or content.get('displayTime')
+            if pub_date:
                 try:
-                    published_at = datetime.fromtimestamp(n['providerPublishTime']).isoformat()
+                    # Parse ISO format date
+                    if isinstance(pub_date, str):
+                        published_at = pub_date
+                    else:
+                        published_at = datetime.fromtimestamp(pub_date).isoformat()
                 except Exception:
                     published_at = None
+            
+            # Extract summary
+            summary = content.get('summary', '') or content.get('description', '')
+            
             result.append({
-                'title': n.get('title'),
-                'publisher': n.get('publisher'),  # This is the real publisher (e.g., SeekingAlpha)
-                'link': n.get('link'),
+                'title': title,
+                'publisher': publisher,
+                'link': link,
                 'published_at': published_at,
                 'source': 'yahoo',
-                'summary': n.get('summary', ''),
+                'summary': summary,
                 'raw_json': json.dumps(n)
             })
         return result
@@ -115,6 +150,17 @@ class FinnhubSource(MarketDataSource):
             return None
             
     def get_news(self, symbol: str):
+        # Check if we can make a request using the scheduler
+        if not news_scheduler.can_make_request('finnhub'):
+            logger.info(f"Skipping Finnhub news for {symbol} - request limit reached")
+            return []
+        
+        # Get optimal number of articles to request
+        articles_limit = news_scheduler.get_optimal_articles_per_request('finnhub')
+        if articles_limit <= 0:
+            logger.info(f"Skipping Finnhub news for {symbol} - no remaining quota")
+            return []
+        
         # Use last 7 days for news
         end_date = datetime.now()
         start_date = end_date - timedelta(days=7)
@@ -126,6 +172,9 @@ class FinnhubSource(MarketDataSource):
             r = requests.get(url)
             r.raise_for_status()
             news = r.json()
+            
+            # Record the request
+            news_scheduler.record_request('finnhub')
             
             # Log the raw response for debugging
             logger.debug(f"Raw Finnhub news response for {symbol}: {news[:2]}")
@@ -171,9 +220,14 @@ class FinnhubSource(MarketDataSource):
                             formatted_item['providerPublishTime']
                         ).isoformat()
                     valid_news.append(formatted_item)
+            
             logger.info(f"Found {len(valid_news)} valid news items for {symbol}")
             valid_news.sort(key=lambda x: x['providerPublishTime'], reverse=True)
-            return valid_news[:10] if valid_news else []
+            
+            # Limit to optimal articles per request
+            limited_news = valid_news[:articles_limit] if valid_news else []
+            logger.info(f"Finnhub: Retrieved {len(limited_news)} articles for {symbol} (limit: {articles_limit})")
+            return limited_news
             
         except requests.exceptions.RequestException as e:
             logger.error(f"Finnhub news request error for {symbol}: {e}")
@@ -213,13 +267,28 @@ class MarketauxSource(MarketDataSource):
         if not self._has_news_access:
             logger.debug(f"Skipping Marketaux news for {symbol} - no access to news endpoint")
             return []
+        
+        # Check if we can make a request using the scheduler
+        if not news_scheduler.can_make_request('marketaux'):
+            logger.info(f"Skipping Marketaux news for {symbol} - request limit reached or outside trading hours")
+            return []
+        
+        # Get optimal number of articles to request
+        articles_limit = news_scheduler.get_optimal_articles_per_request('marketaux')
+        if articles_limit <= 0:
+            logger.info(f"Skipping Marketaux news for {symbol} - no remaining quota")
+            return []
             
-        url = f'https://api.marketaux.com/v1/news/all?symbols={symbol}&filter_entities=true&language=en&api_token={self.api_key}'
+        url = f'https://api.marketaux.com/v1/news/all?symbols={symbol}&filter_entities=true&language=en&limit={articles_limit}&api_token={self.api_key}'
         try:
             r = requests.get(url)
             r.raise_for_status()
             data = r.json()
             news = data.get('data', [])
+            
+            # Record the request
+            news_scheduler.record_request('marketaux')
+            
             result = []
             for n in news:
                 result.append({
@@ -232,6 +301,8 @@ class MarketauxSource(MarketDataSource):
                     'score': n.get('score'),
                     'raw_json': json.dumps(n)
                 })
+            
+            logger.info(f"Marketaux: Retrieved {len(result)} articles for {symbol} (limit: {articles_limit})")
             return result
         except Exception as e:
             logger.error(f"Marketaux error for {symbol}: {e}")
@@ -268,12 +339,27 @@ class FMPSource(MarketDataSource):
         if not self._has_news_access:
             logger.debug(f"Skipping FMP news for {symbol} - no access to news endpoint")
             return []
+        
+        # Check if we can make a request using the scheduler
+        if not news_scheduler.can_make_request('fmp'):
+            logger.info(f"Skipping FMP news for {symbol} - request limit reached")
+            return []
+        
+        # Get optimal number of articles to request
+        articles_limit = news_scheduler.get_optimal_articles_per_request('fmp')
+        if articles_limit <= 0:
+            logger.info(f"Skipping FMP news for {symbol} - no remaining quota")
+            return []
             
-        url = f'https://financialmodelingprep.com/api/v3/stock_news?tickers={symbol}&limit=50&apikey={self.api_key}'
+        url = f'https://financialmodelingprep.com/api/v3/stock_news?tickers={symbol}&limit={articles_limit}&apikey={self.api_key}'
         try:
             r = requests.get(url)
             r.raise_for_status()
             news = r.json()
+            
+            # Record the request
+            news_scheduler.record_request('fmp')
+            
             result = []
             for n in news:
                 result.append({
@@ -286,6 +372,8 @@ class FMPSource(MarketDataSource):
                     'score': None,
                     'raw_json': json.dumps(n)
                 })
+            
+            logger.info(f"FMP: Retrieved {len(result)} articles for {symbol} (limit: {articles_limit})")
             return result
         except Exception as e:
             logger.error(f"FMP error for {symbol}: {e}")
@@ -296,12 +384,27 @@ class NewsAPISource(MarketDataSource):
     def __init__(self, api_key):
         self.api_key = api_key
     def get_news(self, symbol: str):
-        url = f'https://newsapi.org/v2/everything?q={symbol}&sortBy=publishedAt&language=en&apiKey={self.api_key}'
+        # Check if we can make a request using the scheduler
+        if not news_scheduler.can_make_request('newsapi'):
+            logger.info(f"Skipping NewsAPI news for {symbol} - request limit reached")
+            return []
+        
+        # Get optimal number of articles to request
+        articles_limit = news_scheduler.get_optimal_articles_per_request('newsapi')
+        if articles_limit <= 0:
+            logger.info(f"Skipping NewsAPI news for {symbol} - no remaining quota")
+            return []
+        
+        url = f'https://newsapi.org/v2/everything?q={symbol}&sortBy=publishedAt&language=en&pageSize={articles_limit}&apiKey={self.api_key}'
         try:
             r = requests.get(url)
             r.raise_for_status()
             data = r.json()
             news = data.get('articles', [])
+            
+            # Record the request
+            news_scheduler.record_request('newsapi')
+            
             result = []
             for n in news:
                 result.append({
@@ -314,6 +417,8 @@ class NewsAPISource(MarketDataSource):
                     'score': None,
                     'raw_json': json.dumps(n)
                 })
+            
+            logger.info(f"NewsAPI: Retrieved {len(result)} articles for {symbol} (limit: {articles_limit})")
             return result
         except Exception as e:
             logger.error(f"NewsAPI error for {symbol}: {e}")
@@ -352,14 +457,26 @@ async def get_market_data(symbol: str):
         return data 
 
 def get_all_news(symbol: str):
+    start_time = datetime.now(tz)
+    logger.info(f"=== Starting news fetch for {symbol} at {start_time.strftime('%Y-%m-%d %H:%M:%S %Z')} ===")
     all_news = []
+    successful_sources = []
+    failed_sources = []
+    
     for name, source in MARKET_DATA_SOURCES.items():
         try:
+            logger.info(f"Fetching news from {name} for {symbol}...")
             news = source.get_news(symbol)
             if news:
                 all_news.extend(news)
+                successful_sources.append(f"{name} ({len(news)} articles)")
+                logger.info(f"✓ {name}: Successfully retrieved {len(news)} articles for {symbol}")
+            else:
+                logger.info(f"○ {name}: No articles found for {symbol}")
         except Exception as e:
-            logger.error(f"Error fetching news from {name} for {symbol}: {e}")
+            failed_sources.append(f"{name} (error: {str(e)})")
+            logger.error(f"✗ {name}: Error fetching news for {symbol}: {e}")
+    
     # Deduplicate by link
     seen = set()
     deduped = []
@@ -367,6 +484,22 @@ def get_all_news(symbol: str):
         if n['link'] and n['link'] not in seen:
             deduped.append(n)
             seen.add(n['link'])
+    
     # Sort by published_at desc
     deduped.sort(key=lambda x: x.get('published_at', ''), reverse=True)
+    
+    # Calculate duration
+    end_time = datetime.now(tz)
+    duration = (end_time - start_time).total_seconds()
+    
+    # Log summary with timestamps
+    logger.info(f"=== News fetch completed for {symbol} at {end_time.strftime('%Y-%m-%d %H:%M:%S %Z')} (Duration: {duration:.2f}s) ===")
+    logger.info(f"Total articles retrieved: {len(all_news)}")
+    logger.info(f"After deduplication: {len(deduped)}")
+    if successful_sources:
+        logger.info(f"Successful sources: {', '.join(successful_sources)}")
+    if failed_sources:
+        logger.warning(f"Failed sources: {', '.join(failed_sources)}")
+    logger.info(f"=== End news fetch for {symbol} ===")
+    
     return deduped 

@@ -127,6 +127,348 @@
         </div>
       </div>
 
+      <!-- Target Symbols Management Section -->
+      <div class="bg-gray-800 rounded-xl shadow-xl border border-gray-700 p-6 mb-8">
+        <div class="flex justify-between items-center mb-6">
+          <h2 class="text-xl font-semibold text-white flex items-center">
+            <svg class="w-5 h-5 mr-2 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"></path>
+            </svg>
+            Target Symbols Management
+            <span class="ml-3 px-2 py-0.5 rounded bg-indigo-700 text-xs font-semibold text-indigo-100 uppercase tracking-wide">
+              {{ targetSymbols.length }} Symbols
+            </span>
+          </h2>
+          <div class="flex items-center space-x-3">
+            <button @click="fetchTargetSymbols" :disabled="isLoadingTargetSymbols" class="bg-gradient-to-r from-indigo-600 to-purple-600 text-white px-4 py-2 rounded-lg hover:from-indigo-700 hover:to-purple-700 disabled:from-gray-600 disabled:to-gray-600 disabled:cursor-not-allowed transition-all duration-200 shadow-lg">
+              {{ isLoadingTargetSymbols ? 'Loading...' : 'Refresh' }}
+            </button>
+            <button @click="fetchAndStoreNewsForAll" :disabled="isFetchingNews" class="bg-gradient-to-r from-green-600 to-emerald-600 text-white px-4 py-2 rounded-lg hover:from-green-700 hover:to-emerald-700 disabled:from-gray-600 disabled:to-gray-600 disabled:cursor-not-allowed transition-all duration-200 shadow-lg">
+              {{ isFetchingNews ? 'Fetching...' : 'Fetch News' }}
+            </button>
+          </div>
+        </div>
+
+        <!-- Current Target Symbols -->
+        <div class="mb-6">
+          <h3 class="text-lg font-semibold text-white mb-4">Current Target Symbols</h3>
+          <div v-if="targetSymbols.length > 0" class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
+            <div v-for="symbol in targetSymbols" :key="symbol" class="bg-gray-700 rounded-lg p-3 flex items-center justify-between">
+              <span class="text-white font-semibold">{{ symbol }}</span>
+              <button @click="removeSymbol(symbol)" class="text-red-400 hover:text-red-300 transition-colors">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                </svg>
+              </button>
+            </div>
+          </div>
+          <div v-else class="text-center py-8 text-gray-400">
+            <svg class="w-12 h-12 mx-auto mb-3 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"></path>
+            </svg>
+            <p>No target symbols configured</p>
+            <p class="text-sm text-gray-500 mt-1">Add symbols below to start tracking news</p>
+          </div>
+        </div>
+
+        <!-- Add New Symbol -->
+        <div class="bg-gray-700 rounded-lg p-4">
+          <h4 class="text-md font-semibold text-white mb-3">Add New Symbol</h4>
+          <div class="flex space-x-3">
+            <input
+              v-model="newSymbol"
+              @keyup.enter="addSymbol"
+              placeholder="Enter stock symbol (e.g., AAPL)"
+              class="flex-1 bg-gray-600 border border-gray-500 rounded-lg px-4 py-2 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+            />
+            <button @click="addSymbol" :disabled="!newSymbol.trim()" class="bg-gradient-to-r from-indigo-600 to-purple-600 text-white px-6 py-2 rounded-lg hover:from-indigo-700 hover:to-purple-700 disabled:from-gray-600 disabled:to-gray-600 disabled:cursor-not-allowed transition-all duration-200 shadow-lg">
+              Add
+            </button>
+          </div>
+          <div class="mt-3 text-xs text-gray-400">
+            <p>💡 Tip: Add 3-4 symbols for optimal news tracking. Popular symbols: AAPL, TSLA, MSFT, GOOGL, NVDA, AMD, META</p>
+          </div>
+        </div>
+
+        <!-- Quick Add Popular Symbols -->
+        <div class="mt-4">
+          <h4 class="text-md font-semibold text-white mb-3">Quick Add Popular Symbols</h4>
+          <div class="flex flex-wrap gap-2">
+            <button 
+              v-for="symbol in popularSymbols" 
+              :key="symbol"
+              @click="quickAddSymbol(symbol)"
+              :disabled="targetSymbols.includes(symbol)"
+              class="px-3 py-1 rounded-lg text-sm font-medium transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+              :class="targetSymbols.includes(symbol) 
+                ? 'bg-gray-600 text-gray-400' 
+                : 'bg-indigo-600 text-white hover:bg-indigo-700'"
+            >
+              {{ symbol }}
+            </button>
+          </div>
+        </div>
+
+        <!-- News Statistics -->
+        <div class="mt-6 bg-gray-700 rounded-lg p-4">
+          <h4 class="text-md font-semibold text-white mb-3">News Statistics</h4>
+          <div v-if="newsStats" class="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div class="text-center">
+              <div class="text-2xl font-bold text-green-400">{{ newsStats.totalNews }}</div>
+              <div class="text-xs text-gray-400">Total News</div>
+            </div>
+            <div class="text-center">
+              <div class="text-2xl font-bold text-blue-400">{{ newsStats.symbolsWithNews }}</div>
+              <div class="text-xs text-gray-400">Symbols with News</div>
+            </div>
+            <div class="text-center">
+              <div class="text-2xl font-bold text-yellow-400">{{ newsStats.latestNewsDate }}</div>
+              <div class="text-xs text-gray-400">Latest News Date</div>
+            </div>
+            <div class="text-center">
+              <div class="text-2xl font-bold text-purple-400">{{ newsStats.newsSources.join(', ') }}</div>
+              <div class="text-xs text-gray-400">News Sources</div>
+            </div>
+          </div>
+          <div v-else class="text-center py-4">
+            <div class="inline-flex items-center space-x-2">
+              <div class="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-400"></div>
+              <span class="text-sm text-gray-400">Loading news statistics...</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- News Scheduler Control Panel -->
+        <div class="mt-6 bg-gray-700 rounded-lg p-4">
+          <h4 class="text-md font-semibold text-white mb-4 flex items-center">
+            <svg class="w-5 h-5 mr-2 text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+            </svg>
+            News Scheduler Control
+          </h4>
+          
+          <!-- Scheduler Status -->
+          <div class="mb-4 p-3 bg-gray-800 rounded-lg">
+            <div class="flex items-center justify-between mb-2">
+              <span class="text-sm text-gray-300">Scheduler Status:</span>
+              <div class="flex items-center space-x-2">
+                <div :class="schedulerStatus?.running ? 'bg-green-400 animate-pulse' : 'bg-red-400'" class="w-3 h-3 rounded-full"></div>
+                <span class="text-sm font-semibold" :class="schedulerStatus?.running ? 'text-green-400' : 'text-red-400'">
+                  {{ schedulerStatus?.running ? 'Running' : 'Stopped' }}
+                </span>
+              </div>
+            </div>
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs text-gray-400">
+              <div>
+                <span class="font-semibold">Next Run:</span> {{ schedulerStatus?.next_run || 'N/A' }}
+              </div>
+              <div>
+                <span class="font-semibold">Interval:</span> {{ schedulerStatus?.interval || 'N/A' }}
+              </div>
+              <div>
+                <span class="font-semibold">Last Run:</span> {{ schedulerStatus?.last_run || 'N/A' }}
+              </div>
+              <div>
+                <span class="font-semibold">Jobs:</span> {{ schedulerStatus?.job_count || 0 }}
+              </div>
+            </div>
+          </div>
+
+          <!-- Control Buttons -->
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
+            <button 
+              @click="startScheduler" 
+              :disabled="schedulerStatus?.running || isControllingScheduler"
+              class="bg-gradient-to-r from-green-600 to-emerald-600 text-white px-4 py-2 rounded-lg hover:from-green-700 hover:to-emerald-700 disabled:from-gray-600 disabled:to-gray-600 disabled:cursor-not-allowed transition-all duration-200 shadow-lg text-sm font-semibold"
+            >
+              {{ isControllingScheduler ? 'Starting...' : 'Start Scheduler' }}
+            </button>
+            <button 
+              @click="stopScheduler" 
+              :disabled="!schedulerStatus?.running || isControllingScheduler"
+              class="bg-gradient-to-r from-red-600 to-pink-600 text-white px-4 py-2 rounded-lg hover:from-red-700 hover:to-pink-700 disabled:from-gray-600 disabled:to-gray-600 disabled:cursor-not-allowed transition-all duration-200 shadow-lg text-sm font-semibold"
+            >
+              {{ isControllingScheduler ? 'Stopping...' : 'Stop Scheduler' }}
+            </button>
+            <button 
+              @click="refreshSchedulerStatus" 
+              :disabled="isControllingScheduler"
+              class="bg-gradient-to-r from-blue-600 to-purple-600 text-white px-4 py-2 rounded-lg hover:from-blue-700 hover:to-purple-700 disabled:from-gray-600 disabled:to-gray-600 disabled:cursor-not-allowed transition-all duration-200 shadow-lg text-sm font-semibold"
+            >
+              {{ isControllingScheduler ? 'Refreshing...' : 'Refresh Status' }}
+            </button>
+          </div>
+
+          <!-- Manual News Fetch Controls -->
+          <div class="border-t border-gray-600 pt-4">
+            <h5 class="text-sm font-semibold text-white mb-3">Manual News Fetch</h5>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div class="flex space-x-2">
+                <input
+                  v-model="manualFetchSymbol"
+                  placeholder="Symbol (e.g., AAPL)"
+                  class="flex-1 bg-gray-600 border border-gray-500 rounded-lg px-3 py-2 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent text-sm"
+                />
+                <button 
+                  @click="fetchNewsForSymbol" 
+                  :disabled="!manualFetchSymbol.trim() || isFetchingNews"
+                  class="bg-gradient-to-r from-orange-600 to-red-600 text-white px-4 py-2 rounded-lg hover:from-orange-700 hover:to-red-700 disabled:from-gray-600 disabled:to-gray-600 disabled:cursor-not-allowed transition-all duration-200 shadow-lg text-sm font-semibold"
+                >
+                  {{ isFetchingNews ? 'Fetching...' : 'Fetch' }}
+                </button>
+              </div>
+              <div class="flex space-x-2">
+                <button 
+                  @click="fetchNewsForAllTargets" 
+                  :disabled="targetSymbols.length === 0 || isFetchingNews"
+                  class="flex-1 bg-gradient-to-r from-purple-600 to-indigo-600 text-white px-4 py-2 rounded-lg hover:from-purple-700 hover:to-indigo-700 disabled:from-gray-600 disabled:to-gray-600 disabled:cursor-not-allowed transition-all duration-200 shadow-lg text-sm font-semibold"
+                >
+                  {{ isFetchingNews ? 'Fetching All...' : `Fetch All (${targetSymbols.length})` }}
+                </button>
+                <button 
+                  @click="clearAllNews" 
+                  :disabled="isClearingNews"
+                  class="bg-gradient-to-r from-gray-600 to-gray-700 text-white px-4 py-2 rounded-lg hover:from-gray-700 hover:to-gray-800 disabled:from-gray-600 disabled:to-gray-600 disabled:cursor-not-allowed transition-all duration-200 shadow-lg text-sm font-semibold"
+                >
+                  {{ isClearingNews ? 'Clearing...' : 'Clear All' }}
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- API Quota Status -->
+          <div v-if="quotaStatus" class="mt-4 p-3 bg-gray-800 rounded-lg">
+            <h5 class="text-sm font-semibold text-white mb-2">API Quota Status</h5>
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs">
+              <div v-for="(quota, source) in quotaStatus" :key="source" class="text-center">
+                <div class="font-semibold text-gray-300 mb-1">{{ source.toUpperCase() }}</div>
+                <div class="text-gray-400">
+                  <div>{{ quota.used }}/{{ quota.limit }}</div>
+                  <div class="w-full bg-gray-700 rounded-full h-1 mt-1">
+                    <div 
+                      class="h-1 rounded-full transition-all duration-300"
+                      :class="getQuotaColor(quota.used, quota.limit)"
+                      :style="{ width: `${Math.min((quota.used / quota.limit) * 100, 100)}%` }"
+                    ></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Stock Data Charts -->
+      <div class="mt-6 bg-gray-700 rounded-lg p-4">
+        <h4 class="text-md font-semibold text-white mb-3">Stock Charts & Analysis</h4>
+        
+        <!-- Chart Controls -->
+        <div class="flex flex-wrap gap-4 mb-4">
+          <div class="flex items-center space-x-2">
+            <label class="text-sm text-gray-300">Symbol:</label>
+            <input 
+              v-model="chartSymbol" 
+              @change="loadChartData"
+              class="px-2 py-1 bg-gray-600 text-white rounded text-sm"
+              placeholder="AAPL"
+            />
+          </div>
+          
+          <div class="flex items-center space-x-2">
+            <label class="text-sm text-gray-300">Period:</label>
+            <select v-model="chartPeriod" @change="loadChartData" class="px-2 py-1 bg-gray-600 text-white rounded text-sm">
+              <option value="1m">1 Month</option>
+              <option value="3m">3 Months</option>
+              <option value="6m">6 Months</option>
+              <option value="1y">1 Year</option>
+            </select>
+          </div>
+          
+          <div class="flex items-center space-x-2">
+            <label class="text-sm text-gray-300">Interval:</label>
+            <select v-model="chartInterval" @change="loadChartData" class="px-2 py-1 bg-gray-600 text-white rounded text-sm">
+              <option value="1d">Daily</option>
+              <option value="1h">Hourly</option>
+            </select>
+          </div>
+          
+          <button 
+            @click="loadChartData"
+            :disabled="isLoadingChart"
+            class="px-3 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-700 disabled:opacity-50"
+          >
+            {{ isLoadingChart ? 'Loading...' : 'Load Chart' }}
+          </button>
+          
+          <button 
+            @click="initializeStockData"
+            :disabled="isInitializingData"
+            class="px-3 py-1 bg-green-600 text-white rounded text-sm hover:bg-green-700 disabled:opacity-50"
+          >
+            {{ isInitializingData ? 'Initializing...' : 'Initialize Data' }}
+          </button>
+        </div>
+        
+        <!-- Chart Display -->
+        <div v-if="chartData.dates && chartData.dates.length > 0" class="space-y-4">
+          <!-- Price Chart -->
+          <div class="bg-gray-800 rounded p-4">
+            <h5 class="text-sm font-semibold text-white mb-2">Price Chart</h5>
+            <div ref="priceChart" class="h-64"></div>
+          </div>
+          
+          <!-- Volume Chart -->
+          <div class="bg-gray-800 rounded p-4">
+            <h5 class="text-sm font-semibold text-white mb-2">Volume</h5>
+            <div ref="volumeChart" class="h-32"></div>
+          </div>
+          
+          <!-- Technical Indicators -->
+          <div v-if="chartData.indicators && Object.keys(chartData.indicators).length > 0" class="bg-gray-800 rounded p-4">
+            <h5 class="text-sm font-semibold text-white mb-2">Technical Indicators</h5>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div v-for="(indicator, name) in chartData.indicators" :key="name" class="bg-gray-700 rounded p-3">
+                <h6 class="text-xs font-semibold text-gray-300 mb-2">{{ name }}</h6>
+                <div ref="indicatorCharts" :data-indicator="name" class="h-24"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Trading Signals -->
+        <div v-if="tradingSignal" class="mt-4 bg-gray-800 rounded p-4">
+          <h5 class="text-sm font-semibold text-white mb-2">Trading Signal</h5>
+          <div class="flex items-center space-x-4">
+            <div class="flex items-center space-x-2">
+              <span class="text-sm text-gray-300">Signal:</span>
+              <span 
+                :class="{
+                  'text-green-400': tradingSignal.signal === 'buy',
+                  'text-red-400': tradingSignal.signal === 'sell',
+                  'text-yellow-400': tradingSignal.signal === 'hold'
+                }"
+                class="font-semibold text-sm"
+              >
+                {{ tradingSignal.signal.toUpperCase() }}
+              </span>
+            </div>
+            <div class="flex items-center space-x-2">
+              <span class="text-sm text-gray-300">Confidence:</span>
+              <span class="text-sm text-white">{{ (tradingSignal.confidence * 100).toFixed(1) }}%</span>
+            </div>
+          </div>
+          <div class="mt-2">
+            <span class="text-sm text-gray-300">Reasoning:</span>
+            <p class="text-sm text-white mt-1">{{ tradingSignal.reasoning }}</p>
+          </div>
+        </div>
+        
+        <!-- No Data Message -->
+        <div v-else-if="!isLoadingChart" class="text-center py-8">
+          <p class="text-gray-400">No chart data available. Enter a symbol and click "Load Chart" to view data.</p>
+        </div>
+      </div>
+
       <!-- Market Data Section -->
       <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
         <div class="lg:col-span-2">
@@ -194,7 +536,7 @@
               </div>
             </div>
             <!-- News Section -->
-            <div v-if="news.length" class="bg-gray-700 rounded-xl p-6 border border-gray-600 mt-6">
+            <div v-if="latestNews.length" class="bg-gray-700 rounded-xl p-6 border border-gray-600 mt-6">
               <h3 class="text-lg font-semibold text-white mb-4 flex items-center">
                 <svg class="w-5 h-5 mr-2 text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path>
@@ -202,12 +544,17 @@
                 Latest News
               </h3>
               <ul>
-                <li v-for="item in news" :key="item.link" class="mb-4 pb-4 border-b border-gray-600 last:border-b-0 last:mb-0 last:pb-0">
+                <li v-for="item in latestNews" :key="item.link" class="mb-4 pb-4 border-b border-gray-600 last:border-b-0 last:mb-0 last:pb-0">
                   <a :href="item.link" target="_blank" class="text-blue-400 hover:underline font-semibold text-base">{{ item.title }}</a>
                   <div class="text-xs text-gray-400 mt-1">
                     {{ item.publisher }} |
                     {{ formatNewsTime(item.published_at) }}
-                    <span v-if="item.score !== null && item.score !== undefined" class="mx-1">| <span class="font-bold text-yellow-300">Score: {{ item.score }}</span></span>
+                    <span v-if="item.score !== null && item.score !== undefined" class="mx-1">
+                      | <span class="font-bold" :class="getSentimentColor(item.score)">Score: {{ item.score }}</span>
+                      <span v-if="item.sentiment_label" class="ml-1 px-1 py-0.5 rounded text-xs" :class="getSentimentBadgeColor(item.sentiment_label)">
+                        {{ item.sentiment_label }}
+                      </span>
+                    </span>
                     | <span class="uppercase">{{ item.source }}</span>
                   </div>
                   <div class="text-sm text-gray-200 mt-2">{{ item.summary }}</div>
@@ -338,6 +685,38 @@ const refreshIntervals = [60, 180, 300]
 const selectedInterval = ref(60)
 let marketDataInterval = null
 const news = ref([])
+const targetSymbols = ref([])
+const isLoadingTargetSymbols = ref(false)
+const isFetchingNews = ref(false)
+const newSymbol = ref('')
+const popularSymbols = ref(['AAPL', 'TSLA', 'MSFT', 'GOOGL', 'NVDA', 'AMD', 'META'])
+const newsStats = ref(null)
+const newsMap = ref({}) // { symbol: [news, ...] }
+const isClearingNews = ref(false)
+const manualFetchSymbol = ref('')
+const schedulerStatus = ref({
+  running: false,
+  next_run: 'N/A',
+  interval: 'N/A',
+  last_run: 'N/A',
+  job_count: 0
+})
+const quotaStatus = ref({})
+const isControllingScheduler = ref(false)
+const isLoadingNewsStats = ref(false)
+const isLoadingSchedulerStatus = ref(false)
+
+// 股票圖表相關數據
+const chartSymbol = ref('AAPL')
+const chartPeriod = ref('1y')
+const chartInterval = ref('1d')
+const chartData = ref({})
+const tradingSignal = ref(null)
+const isLoadingChart = ref(false)
+const isInitializingData = ref(false)
+const priceChart = ref(null)
+const volumeChart = ref(null)
+const indicatorCharts = ref([])
 
 // Methods
 const connectIBKR = async () => {
@@ -457,7 +836,7 @@ const fetchCurrentDataSource = async () => {
   try {
     const res = await $fetch(`${apiBaseUrl}/market-data-source`)
     currentDataSource.value = res.source
-  } catch (e) {
+  } catch {
     currentDataSource.value = 'yahoo'
   }
 }
@@ -472,7 +851,7 @@ const changeDataSource = async () => {
     if (selectedSymbol.value) {
       await fetchMarketData()
     }
-  } catch (e) {
+  } catch {
     alert('Failed to change data source')
   }
 }
@@ -518,10 +897,24 @@ const formatNewsTime = (timestamp) => {
 watch(customSymbol, fetchNews)
 
 onMounted(async () => {
+  // 立即刷新新聞統計和調度器狀態
+  await Promise.all([
+    fetchNewsStats(),
+    refreshSchedulerStatus()
+  ])
+  
+  // 其他初始化
   await fetchCurrentDataSource()
   await connectIBKR()
   await fetchAccountSummary()
-  fetchMarketData()
+  await fetchTargetSymbols()
+  await fetchAllTargetNews()
+  
+  // 預設行情顯示第一個目標股票
+  if (targetSymbols.value.length > 0) {
+    customSymbol.value = targetSymbols.value[0]
+    await fetchMarketData()
+  }
   startMarketDataInterval()
   fetchNews()
 })
@@ -550,5 +943,292 @@ const getPriceChangeColor = () => {
   if (diff > 0) return 'text-green-400'
   if (diff < 0) return 'text-red-400'
   return 'text-gray-400'
+}
+
+const fetchTargetSymbols = async () => {
+  isLoadingTargetSymbols.value = true
+  try {
+    const response = await $fetch(`${apiBaseUrl}/target-symbols`)
+    targetSymbols.value = response.symbols || []
+  } catch (error) {
+    console.error('Failed to fetch target symbols:', error)
+    targetSymbols.value = []
+  } finally {
+    isLoadingTargetSymbols.value = false
+  }
+}
+
+const fetchAndStoreNewsForAll = async () => {
+  isFetchingNews.value = true
+  try {
+    // Fetch news for each target symbol
+    for (const symbol of targetSymbols.value) {
+      try {
+        await $fetch(`${apiBaseUrl}/news/fetch-and-store/${symbol}`)
+        console.log(`News fetched and stored for ${symbol}`)
+      } catch (error) {
+        console.error(`Failed to fetch news for ${symbol}:`, error)
+      }
+    }
+    alert('News fetching completed for all target symbols')
+  } catch (error) {
+    console.error('Failed to fetch and store news for all symbols:', error)
+    alert('Failed to fetch news for some symbols')
+  } finally {
+    isFetchingNews.value = false
+  }
+}
+
+const fetchNewsStats = async () => {
+  try {
+    const response = await $fetch(`${apiBaseUrl}/news/stats`, {
+      headers: {
+        'Cache-Control': 'no-cache',
+        'Pragma': 'no-cache'
+      }
+    })
+    newsStats.value = response
+  } catch {
+    newsStats.value = null
+  }
+}
+
+const removeSymbol = async (symbol) => {
+  targetSymbols.value = targetSymbols.value.filter(s => s !== symbol)
+  
+  // Save to database
+  await saveTargetSymbols()
+}
+
+const addSymbol = async () => {
+  const symbol = newSymbol.value.trim().toUpperCase()
+  if (!symbol || targetSymbols.value.includes(symbol)) return
+  
+  targetSymbols.value.push(symbol)
+  newSymbol.value = ''
+  
+  // Save to database
+  await saveTargetSymbols()
+}
+
+const saveTargetSymbols = async () => {
+  try {
+    await $fetch(`${apiBaseUrl}/target-symbols`, {
+      method: 'POST',
+      body: targetSymbols.value
+    })
+    console.log('Target symbols saved successfully')
+  } catch (error) {
+    console.error('Failed to save target symbols:', error)
+    alert('Failed to save target symbols')
+  }
+}
+
+const quickAddSymbol = async (symbol) => {
+  if (!targetSymbols.value.includes(symbol)) {
+    targetSymbols.value.push(symbol)
+    // Save to database
+    await saveTargetSymbols()
+  }
+}
+
+const fetchAllTargetNews = async () => {
+  newsMap.value = {}
+  for (const symbol of targetSymbols.value) {
+    try {
+      const response = await $fetch(`${apiBaseUrl}/news/all/${symbol}`)
+      newsMap.value[symbol] = response.news || []
+    } catch (error) {
+      newsMap.value[symbol] = []
+    }
+  }
+}
+
+const latestNews = computed(() => {
+  // 合併所有 targetSymbols 的新聞，按 published_at 排序，取最新 10 則
+  let all = []
+  for (const arr of Object.values(newsMap.value)) {
+    all = all.concat(arr)
+  }
+  return all.sort((a, b) => (b.published_at || '').localeCompare(a.published_at || '')).slice(0, 10)
+})
+
+watch(targetSymbols, async (newSymbols) => {
+  if (newSymbols.length > 0) {
+    await saveTargetSymbols()
+    await fetchAllTargetNews()
+    // 預設行情顯示第一個目標股票
+    if (customSymbol.value !== newSymbols[0]) {
+      customSymbol.value = newSymbols[0]
+      await fetchMarketData()
+    }
+  } else {
+    newsMap.value = {}
+    news.value = []
+  }
+}, { immediate: true })
+
+const getSentimentColor = (score) => {
+  if (score >= 70) return 'text-green-400'
+  if (score >= 60) return 'text-green-300'
+  if (score >= 45) return 'text-yellow-400'
+  if (score >= 40) return 'text-gray-400'
+  if (score >= 30) return 'text-orange-400'
+  if (score >= 20) return 'text-red-300'
+  return 'text-red-400'
+}
+
+const getSentimentBadgeColor = (label) => {
+  const sentimentColors = {
+    'very_positive': 'bg-green-600 text-green-100',
+    'positive': 'bg-green-500 text-green-100',
+    'slightly_positive': 'bg-yellow-500 text-yellow-100',
+    'neutral': 'bg-gray-500 text-gray-100',
+    'slightly_negative': 'bg-orange-500 text-orange-100',
+    'negative': 'bg-red-500 text-red-100',
+    'very_negative': 'bg-red-600 text-red-100'
+  }
+  return sentimentColors[label] || 'bg-gray-500 text-gray-100'
+}
+
+const startScheduler = async () => {
+  isControllingScheduler.value = true
+  try {
+    await $fetch(`${apiBaseUrl}/news/scheduler/start`)
+    await fetchNewsStats()
+    alert('Scheduler started')
+  } catch {
+    alert('Failed to start scheduler')
+  } finally {
+    isControllingScheduler.value = false
+  }
+}
+
+const stopScheduler = async () => {
+  isControllingScheduler.value = true
+  try {
+    await $fetch(`${apiBaseUrl}/news/scheduler/stop`)
+    await fetchNewsStats()
+    alert('Scheduler stopped')
+  } catch {
+    alert('Failed to stop scheduler')
+  } finally {
+    isControllingScheduler.value = false
+  }
+}
+
+const refreshSchedulerStatus = async () => {
+  isControllingScheduler.value = true
+  try {
+    console.log('Fetching scheduler status from:', `${apiBaseUrl}/news/scheduler/status`)
+    const response = await $fetch(`${apiBaseUrl}/news/scheduler/status`, {
+      headers: {
+        'Cache-Control': 'no-cache',
+        'Pragma': 'no-cache'
+      }
+    })
+    console.log('Scheduler status response:', response)
+    schedulerStatus.value = response
+    
+    // Also fetch quota status
+    try {
+      const quotaResponse = await $fetch(`${apiBaseUrl}/news/quota-status`, {
+        headers: {
+          'Cache-Control': 'no-cache',
+          'Pragma': 'no-cache'
+        }
+      })
+      quotaStatus.value = quotaResponse
+    } catch {
+      // Quota status is optional, don't fail if it's not available
+      quotaStatus.value = {}
+    }
+  } catch (error) {
+    console.error('Failed to refresh scheduler status:', error)
+    // Set default stopped status instead of showing alert
+    schedulerStatus.value = {
+      running: false,
+      next_run: 'N/A',
+      interval: 'N/A',
+      last_run: 'N/A',
+      job_count: 0
+    }
+    quotaStatus.value = {}
+  } finally {
+    isControllingScheduler.value = false
+  }
+}
+
+const fetchNewsForSymbol = async () => {
+  const symbol = manualFetchSymbol.value.trim()
+  if (!symbol) return
+  try {
+    await $fetch(`${apiBaseUrl}/news/fetch/${symbol}`)
+    alert(`News fetched for ${symbol}`)
+  } catch {
+    alert('Failed to fetch news for symbol')
+  }
+}
+
+const fetchNewsForAllTargets = async () => {
+  try {
+    await $fetch(`${apiBaseUrl}/news/fetch-all`)
+    alert('News fetching completed for all targets')
+  } catch {
+    alert('Failed to fetch news for all targets')
+  }
+}
+
+const clearAllNews = async () => {
+  isClearingNews.value = true
+  try {
+    await $fetch(`${apiBaseUrl}/news/clear-all`)
+    newsMap.value = {}
+    news.value = []
+    alert('All news cleared')
+  } catch {
+    alert('Failed to clear all news')
+  } finally {
+    isClearingNews.value = false
+  }
+}
+
+const getQuotaColor = (used, limit) => {
+  const percentage = (used / limit) * 100
+  if (percentage < 50) return 'bg-green-500'
+  if (percentage < 75) return 'bg-yellow-500'
+  return 'bg-red-500'
+}
+
+const loadChartData = async () => {
+  isLoadingChart.value = true
+  try {
+    const response = await $fetch(`${apiBaseUrl}/chart-data`, {
+      method: 'POST',
+      body: {
+        symbol: chartSymbol.value,
+        period: chartPeriod.value,
+        interval: chartInterval.value
+      }
+    })
+    chartData.value = response
+  } catch (error) {
+    console.error('Failed to load chart data:', error)
+  } finally {
+    isLoadingChart.value = false
+  }
+}
+
+const initializeStockData = async () => {
+  isInitializingData.value = true
+  try {
+    await $fetch(`${apiBaseUrl}/stock-data/initialize`)
+    alert('Stock data initialized')
+  } catch (error) {
+    console.error('Failed to initialize stock data:', error)
+    alert('Failed to initialize stock data')
+  } finally {
+    isInitializingData.value = false
+  }
 }
 </script> 

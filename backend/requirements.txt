@@ -8,4 +8,15 @@ sqlalchemy
 alembic
 nest_asyncio
 yfinance
-apscheduler 
+apscheduler
+textblob
+nltk
+pandas
+numpy
+matplotlib
+plotly
+seaborn
+scikit-learn
+requests
+aiohttp
+pytz 

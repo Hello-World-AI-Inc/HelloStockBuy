@@ -38,6 +38,13 @@ def upgrade() -> None:
     op.create_index(op.f('ix_news_published_at'), 'news', ['published_at'], unique=False)
     op.create_index(op.f('ix_news_source'), 'news', ['source'], unique=False)
     op.create_index(op.f('ix_news_symbol'), 'news', ['symbol'], unique=False)
+    op.create_table(
+        'target_symbols',
+        sa.Column('id', sa.Integer(), nullable=False),
+        sa.Column('symbol', sa.String(), nullable=False),
+        sa.PrimaryKeyConstraint('id'),
+        sa.UniqueConstraint('symbol'),
+    )
     # ### end Alembic commands ###
 
 
@@ -48,4 +55,5 @@ def downgrade() -> None:
     op.drop_index(op.f('ix_news_published_at'), table_name='news')
     op.drop_index(op.f('ix_news_id'), table_name='news')
     op.drop_table('news')
+    op.drop_table('target_symbols')
     # ### end Alembic commands ###
