@@ -369,7 +369,8 @@ async def fetch_and_store_news_for_symbol(symbol: str, db: Session):
     """Helper function to fetch and store news for a specific symbol"""
     try:
         # Get news from all available sources
-        all_news = await get_all_news(symbol)
+        loop = asyncio.get_event_loop()
+        all_news = await loop.run_in_executor(None, lambda: get_all_news(symbol))
         
         if not all_news:
             logger.info(f"No news found for {symbol}")
@@ -390,7 +391,10 @@ async def fetch_and_store_news_for_symbol(symbol: str, db: Session):
                     continue
                 
                 # Perform sentiment analysis
-                sentiment_result = await sentiment_analyzer.analyze_text(news_item['summary'])
+                sentiment_result = sentiment_analyzer.analyze_sentiment(
+                    text=news_item['summary'],
+                    title=news_item['title']
+                )
                 
                 # Create news record
                 news_record = News(
@@ -402,9 +406,9 @@ async def fetch_and_store_news_for_symbol(symbol: str, db: Session):
                     source=news_item['source'],
                     publisher=news_item.get('publisher', ''),
                     score=sentiment_result.get('score'),
-                    sentiment_label=sentiment_result.get('sentiment_label'),
+                    sentiment_label=sentiment_result.get('sentiment'),
                     confidence=sentiment_result.get('confidence'),
-                    analysis_method=sentiment_result.get('analysis_method', 'combined')
+                    analysis_method=sentiment_result.get('method', 'combined')
                 )
                 
                 db.add(news_record)
