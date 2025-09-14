@@ -1,10 +1,16 @@
 # HelloStockBuy - AI-Powered Investment Platform
 
-A comprehensive investment platform that combines real-time market data, portfolio management, and AI-powered investment advice. Built with FastAPI, Nuxt.js, and integrated with Interactive Brokers (IBKR) for live trading data.
+<div align="center">
+  <img src="hellostockbuydemo.jpg" alt="HelloStockBuy Demo" width="800" style="border-radius: 10px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);">
+</div>
+
+A comprehensive investment platform that combines real-time market data, portfolio management, and AI-powered investment advice. Built with FastAPI, Nuxt.js, and integrated with Interactive Brokers (IBKR) for live trading data. 
+
 
 ## 🚀 Features
 
 ### Core Functionality
+
 - **Real-time Market Data**: Live stock prices, charts, and market information
 - **Portfolio Management**: Track positions, P&L, and account summary
 - **AI Investment Advisor**: ChatGPT-powered investment analysis and recommendations
@@ -13,6 +19,7 @@ A comprehensive investment platform that combines real-time market data, portfol
 - **Responsive Design**: Modern, mobile-friendly interface
 
 ### Technical Features
+
 - **FastAPI Backend**: High-performance Python API with automatic documentation
 - **Nuxt.js Frontend**: Vue.js-based reactive frontend with SSR
 - **PostgreSQL Database**: Robust data storage with Alembic migrations
@@ -48,18 +55,22 @@ A comprehensive investment platform that combines real-time market data, portfol
 ## 🚀 Quick Start
 
 ### 1. Clone the Repository
+
 ```bash
 git clone https://github.com/yourusername/hellostockbuy.git
 cd hellostockbuy
 ```
 
 ### 2. Environment Configuration
+
 Copy the example environment file and configure your settings:
+
 ```bash
 cp .env.example .env
 ```
 
 Edit `.env` with your configuration:
+
 ```env
 # Database
 POSTGRES_DB=hellostockbuy
@@ -80,11 +91,13 @@ FALLBACK_LOCALE=en
 ```
 
 ### 3. Start the Application
+
 ```bash
 docker compose up -d
 ```
 
 ### 4. Access the Application
+
 - **Frontend**: http://localhost:3001
 - **Backend API**: http://localhost:8000
 - **API Documentation**: http://localhost:8000/docs
@@ -92,29 +105,34 @@ docker compose up -d
 ## 🔧 Configuration
 
 ### Interactive Brokers Setup
+
 1. Install and configure IBKR Gateway or TWS
 2. Enable API connections in the settings
 3. Set the correct port (7497 for live, 7496 for paper trading)
 4. Update the `IBKR_HOST` and `IBKR_PORT` in your `.env` file
 
 ### OpenAI Configuration
+
 1. Get your API key from https://platform.openai.com/
 2. Add it to your `.env` file as `OPENAI_API_KEY`
 
 ## 📱 Usage
 
 ### Main Dashboard
+
 - **Home Page**: Simple navigation to main features
 - **AI Investment Advisor**: Chat interface for investment advice
 - **Analysis Dashboard**: Detailed portfolio and market analysis
 
 ### AI Investment Advisor
+
 1. Connect to IBKR to load your portfolio
 2. Ask questions about your investments
 3. Get AI-powered analysis and recommendations
 4. View real-time portfolio data in the sidebar
 
 ### Analysis Dashboard
+
 - View account summary and portfolio positions
 - Analyze market data for specific symbols
 - Track P&L and performance metrics
@@ -122,6 +140,7 @@ docker compose up -d
 ## 🛠️ Development
 
 ### Local Development Setup
+
 ```bash
 # Backend
 cd backend
@@ -137,6 +156,7 @@ pnpm dev
 ```
 
 ### Database Migrations
+
 ```bash
 # Create a new migration
 alembic revision --autogenerate -m "Description of changes"
@@ -146,6 +166,7 @@ alembic upgrade head
 ```
 
 ### Testing
+
 ```bash
 # Backend tests
 cd backend
@@ -159,6 +180,7 @@ pnpm test
 ## 📊 API Endpoints
 
 ### Core Endpoints
+
 - `GET /connect` - Connect to IBKR
 - `GET /account/summary` - Get account summary
 - `GET /account/positions` - Get portfolio positions
@@ -166,11 +188,13 @@ pnpm test
 - `POST /ai/analyze` - Get AI investment analysis
 
 ### News & Data
+
 - `GET /news/all/{symbol}` - Get news for symbol
 - `POST /news/fetch-and-store/{symbol}` - Fetch and store news
 - `GET /news/stats` - Get news statistics
 
 ### Scheduler Control
+
 - `POST /news/scheduler/start` - Start news scheduler
 - `POST /news/scheduler/stop` - Stop news scheduler
 - `GET /news/scheduler/status` - Get scheduler status
@@ -178,6 +202,7 @@ pnpm test
 ## 🐳 Docker Deployment
 
 ### Production Deployment
+
 ```bash
 # Build and start all services
 docker compose -f docker-compose.prod.yml up -d
@@ -190,6 +215,7 @@ docker compose down
 ```
 
 ### Environment Variables for Production
+
 ```env
 # Production settings
 NODE_ENV=production
@@ -215,6 +241,7 @@ OPENAI_API_KEY=your_production_key
 5. Open a Pull Request
 
 ### Development Guidelines
+
 - Follow PEP 8 for Python code
 - Use ESLint for JavaScript/TypeScript
 - Write tests for new features
@@ -229,20 +256,24 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ### Common Issues
 
 **IBKR Connection Issues**
+
 - Ensure IBKR Gateway is running
 - Check port configuration (7497 for live, 7496 for paper)
 - Verify API permissions in IBKR settings
 
 **OpenAI API Issues**
+
 - Verify API key is correct and has sufficient credits
 - Check rate limits and usage quotas
 
 **Database Connection Issues**
+
 - Ensure PostgreSQL is running
 - Check database credentials in `.env`
 - Verify database exists and migrations are applied
 
 ### Getting Help
+
 - Check the [Issues](https://github.com/yourusername/hellostockbuy/issues) page
 - Create a new issue with detailed information
 - Include logs and error messages
@@ -250,6 +281,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ## 🗺️ Roadmap
 
 ### Upcoming Features
+
 - [ ] Advanced charting with technical indicators
 - [ ] Options trading support
 - [ ] Mobile app (React Native)
@@ -260,6 +292,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - [ ] Paper trading mode
 
 ### Version History
+
 - **v1.0.0** - Initial release with core functionality
 - **v1.1.0** - Added AI advisor and news integration
 - **v1.2.0** - Enhanced UI and multi-language support
