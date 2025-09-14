@@ -1,0 +1,17 @@
+{
+  "ai": {
+    "welcome": "Hello! I'm your AI Investment Advisor. I can analyze your portfolio, provide investment recommendations, and answer your investment questions.",
+    "analyzing": "Analyzing your portfolio...",
+    "analysisComplete": "Analysis complete!",
+    "error": "AI analysis failed",
+    "noData": "Unable to get portfolio data, please connect to IBKR first.",
+    "systemPrompt": "You are a professional investment advisor. Please respond in English. Based on the user's portfolio data, market data, and news, provide professional investment advice."
+  },
+  "errors": {
+    "connectionFailed": "Connection failed",
+    "dataLoadFailed": "Data loading failed",
+    "invalidInput": "Invalid input",
+    "networkError": "Network error",
+    "serverError": "Server error"
+  }
+}

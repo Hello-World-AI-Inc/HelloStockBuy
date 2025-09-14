@@ -1,27 +1,154 @@
-# Node
-node_modules/
-frontend/.nuxt/
-frontend/.output/
-frontend/.pnpm-store
+# Environment variables
+.env
+.env.local
+.env.production
+.env.staging
+
+# Database files - PostgreSQL internal files
+db/data/
+db/global/
+db/base/
+db/pg_*
+db/postgresql.*
+db/postmaster.*
+db/pg_commit_ts/
+db/pg_dynshmem/
+db/pg_logical/
+db/pg_multixact/
+db/pg_notify/
+db/pg_replslot/
+db/pg_serial/
+db/pg_snapshots/
+db/pg_stat/
+db/pg_stat_tmp/
+db/pg_subtrans/
+db/pg_tblspc/
+db/pg_twophase/
+db/pg_wal/
+db/pg_xact/
+db/PG_VERSION
 
 # Python
 __pycache__/
-*.pyc
-backend/.venv/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
 
-# Env
-.env
-.env.*
+# Virtual environments
+venv/
+env/
+ENV/
+env.bak/
+venv.bak/
+
+# Node.js
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# pnpm
+.pnpm-store/
+.pnpm/
+
+# Frontend build
+frontend/.nuxt/
+frontend/.output/
+frontend/dist/
+frontend/.env
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Logs
+logs/
+*.log
 
 # Docker
-*.pid
-db_data/
+.dockerignore
 
-# Postgres
-*.log
-*.pid
-pgdata/
-db/
+# Temporary files
+*.tmp
+*.temp
 
-# VSCode
-.vscode/ 
+# Coverage reports
+htmlcov/
+.coverage
+.coverage.*
+coverage.xml
+*.cover
+.hypothesis/
+.pytest_cache/
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# pyenv
+.python-version
+
+# pipenv
+Pipfile.lock
+
+# PEP 582
+__pypackages__/
+
+# Celery
+celerybeat-schedule
+celerybeat.pid
+
+# SageMath parsed files
+*.sage.py
+
+# Spyder project settings
+.spyderproject
+.spyproject
+
+# Rope project settings
+.ropeproject
+
+# mkdocs documentation
+/site
+
+# mypy
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# Pyre type checker
+.pyre/
+
+# Local development
+local/
+temp/

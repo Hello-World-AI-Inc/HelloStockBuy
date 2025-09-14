@@ -156,7 +156,33 @@ class IBKRService:
         
         try:
             # Get account details
-            account = self.ib.managedAccounts()[0]  # Get the first account
+            accounts = self.ib.managedAccounts()
+            account = accounts[0] if accounts else None
+            
+            # Try to get account display name (if available)
+            account_display_name = account
+            try:
+                # Try to get more detailed account information
+                if hasattr(self.ib, 'reqManagedAccts'):
+                    # Request managed accounts which might include display names
+                    managed_accts = self.ib.reqManagedAccts()
+                    if managed_accts and len(managed_accts) > 0:
+                        # Sometimes managed accounts include display names
+                        account_display_name = managed_accts[0]
+                        logger.info(f"Got managed account info: {account_display_name}")
+                
+                # Try to get account summary which might include account name
+                try:
+                    account_summary = self.ib.accountSummary()
+                    for summary_item in account_summary:
+                        if summary_item.tag == 'AccountType' and summary_item.value:
+                            # This might give us more info about the account
+                            logger.info(f"Account type: {summary_item.value}")
+                except Exception as summary_error:
+                    logger.debug(f"Could not get account summary for display name: {summary_error}")
+                    
+            except Exception as e:
+                logger.debug(f"Could not get account display name: {e}")
             
             # Request account updates with timeout
             try:
@@ -182,6 +208,7 @@ class IBKRService:
                     # Return basic account info if no cached values
                     return {
                         'account': account,
+                        'account_display_name': account_display_name,
                         'net_liquidation_value': 0.0,
                         'total_cash_value': 0.0,
                         'available_funds': 0.0,
@@ -197,6 +224,7 @@ class IBKRService:
             # Create summary dictionary
             summary_dict = {
                 'account': account,
+                'account_display_name': account_display_name,
                 'net_liquidation_value': 0.0,
                 'total_cash_value': 0.0,
                 'available_funds': 0.0,
@@ -264,7 +292,7 @@ class IBKRService:
                     'exchange': contract.exchange,
                     'currency': contract.currency,
                     'position': item.position,  # Number of shares/contracts
-                    'avg_cost': item.avgCost,
+                    'avg_cost': item.averageCost,  # Fixed: use averageCost instead of avgCost
                     'market_price': item.marketPrice,
                     'market_value': item.marketValue,
                     'unrealized_pnl': item.unrealizedPNL,

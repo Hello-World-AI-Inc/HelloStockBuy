@@ -1,0 +1,29 @@
+# Global code owners
+* @yourusername
+
+# Backend code
+/backend/ @yourusername @backend-team
+
+# Frontend code
+/frontend/ @yourusername @frontend-team
+
+# Documentation
+*.md @yourusername @docs-team
+/docs/ @yourusername @docs-team
+
+# Configuration files
+docker-compose.yml @yourusername @devops-team
+Dockerfile @yourusername @devops-team
+.github/ @yourusername @devops-team
+
+# Database
+/db/ @yourusername @backend-team
+*.sql @yourusername @backend-team
+
+# Tests
+/tests/ @yourusername @qa-team
+*test* @yourusername @qa-team
+
+# Security
+SECURITY.md @yourusername @security-team
+.github/workflows/security* @yourusername @security-team

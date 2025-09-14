@@ -8,6 +8,8 @@ services:
     environment:
       - NUXT_PUBLIC_API_BASE_URL=http://localhost:8000
       - HOST=0.0.0.0
+      - DEFAULT_LOCALE=${DEFAULT_LOCALE}
+      - FALLBACK_LOCALE=${FALLBACK_LOCALE}
     volumes:
       - ./frontend:/app
       - /app/node_modules

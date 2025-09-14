@@ -1,0 +1,17 @@
+{
+  "ai": {
+    "welcome": "您好！我是您的 AI 投資顧問。我可以分析您的投資組合，提供投資建議，並回答您的投資問題。",
+    "analyzing": "正在分析您的投資組合...",
+    "analysisComplete": "分析完成！",
+    "error": "AI 分析失敗",
+    "noData": "無法獲取投資組合數據，請先連接 IBKR。",
+    "systemPrompt": "你是一位專業的投資顧問，請用繁體中文回答。請根據用戶的投資組合數據、市場數據和新聞，提供專業的投資建議。"
+  },
+  "errors": {
+    "connectionFailed": "連接失敗",
+    "dataLoadFailed": "數據載入失敗",
+    "invalidInput": "輸入無效",
+    "networkError": "網絡錯誤",
+    "serverError": "服務器錯誤"
+  }
+}
