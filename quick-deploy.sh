@@ -40,16 +40,16 @@ echo -e "${BLUE}🔍 查看部署狀態: https://github.com/Hello-World-AI-Inc/h
 echo -e "${YELLOW}⏳ 等待 30 秒後檢查部署狀態...${NC}"
 sleep 30
 
-# 嘗試檢查測試服務器狀態 (需要配置)
-if [ -n "$TEST_SERVER_HOST" ]; then
-    echo -e "${BLUE}🔍 檢查測試服務器狀態...${NC}"
-    if curl -f -s http://$TEST_SERVER_HOST:8000/health > /dev/null; then
-        echo -e "${GREEN}✅ 測試服務器運行正常${NC}"
-        echo -e "${GREEN}🌐 前端: http://$TEST_SERVER_HOST:3001${NC}"
-        echo -e "${GREEN}🔧 後端: http://$TEST_SERVER_HOST:8000${NC}"
-    else
-        echo -e "${YELLOW}⚠️  測試服務器可能還在部署中，請稍後檢查${NC}"
-    fi
+# 檢查測試服務器狀態
+TEST_SERVER_HOST="192.168.0.6"
+echo -e "${BLUE}🔍 檢查測試服務器狀態...${NC}"
+if curl -f -s http://$TEST_SERVER_HOST:8000/health > /dev/null; then
+    echo -e "${GREEN}✅ 測試服務器運行正常${NC}"
+    echo -e "${GREEN}🌐 前端: http://$TEST_SERVER_HOST:3001${NC}"
+    echo -e "${GREEN}🔧 後端: http://$TEST_SERVER_HOST:8000${NC}"
+    echo -e "${GREEN}📚 API 文檔: http://$TEST_SERVER_HOST:8000/docs${NC}"
 else
-    echo -e "${YELLOW}💡 提示: 設置 TEST_SERVER_HOST 環境變量以自動檢查部署狀態${NC}"
+    echo -e "${YELLOW}⚠️  測試服務器可能還在部署中，請稍後檢查${NC}"
+    echo -e "${YELLOW}🌐 前端: http://$TEST_SERVER_HOST:3001${NC}"
+    echo -e "${YELLOW}🔧 後端: http://$TEST_SERVER_HOST:8000${NC}"
 fi

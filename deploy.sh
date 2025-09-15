@@ -19,14 +19,14 @@ SERVER_NAME=${1:-$DEFAULT_SERVER}
 # 服務器配置 (可以根據需要修改)
 case $SERVER_NAME in
   "test-server")
-    SERVER_HOST="your-test-server.com"
-    SERVER_USER="ubuntu"
-    SERVER_PATH="/home/ubuntu/helloStockBuy"
+    SERVER_HOST="192.168.0.6"
+    SERVER_USER="root"
+    SERVER_PATH="/root/helloStockBuy"
     ;;
   "staging")
-    SERVER_HOST="your-staging-server.com"
-    SERVER_USER="ubuntu"
-    SERVER_PATH="/home/ubuntu/helloStockBuy"
+    SERVER_HOST="192.168.0.6"
+    SERVER_USER="root"
+    SERVER_PATH="/root/helloStockBuy"
     ;;
   *)
     echo -e "${RED}❌ 未知的服務器: $SERVER_NAME${NC}"
