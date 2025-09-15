@@ -127,6 +127,8 @@ curl -fsSL https://raw.githubusercontent.com/Hello-World-AI-Inc/helloStockBuy/ma
 #### 4. Access Your Test Server
 
 > 📖 **For detailed remote development setup, see [DEVELOPMENT_WORKFLOW.md](DEVELOPMENT_WORKFLOW.md)**
+> 
+> 🤖 **For AI assistants**: See [AI_SETUP_NOTES.md](AI_SETUP_NOTES.md) for project configuration details
 
 - **Frontend**: http://localhost:3001
 - **Backend API**: http://localhost:8000

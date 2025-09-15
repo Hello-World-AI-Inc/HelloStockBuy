@@ -1,0 +1,87 @@
+{
+  "project_info": {
+    "name": "HelloStockBuy",
+    "description": "AI-Powered Investment Platform",
+    "version": "1.0.0"
+  },
+  "development_setup": {
+    "local_development": {
+      "description": "Local machine runs Cursor for code editing only",
+      "docker_services": "None - all services run on remote test server"
+    },
+    "remote_test_server": {
+      "host": "192.168.0.6",
+      "user": "root",
+      "project_path": "/root/helloStockBuy",
+      "description": "Remote server runs all Docker services for testing",
+      "services": {
+        "frontend": {
+          "port": 3001,
+          "url": "http://192.168.0.6:3001"
+        },
+        "backend": {
+          "port": 8000,
+          "url": "http://192.168.0.6:8000",
+          "api_docs": "http://192.168.0.6:8000/docs"
+        },
+        "database": {
+          "port": 5432,
+          "type": "PostgreSQL"
+        }
+      }
+    }
+  },
+  "deployment_workflow": {
+    "description": "Automated deployment from local to remote test server",
+    "scripts": {
+      "quick_deploy": "./quick-deploy.sh",
+      "full_deploy": "./deploy.sh test-server",
+      "setup_server": "./setup-test-server.sh"
+    },
+    "process": [
+      "1. Edit code in Cursor locally",
+      "2. Run ./quick-deploy.sh",
+      "3. Auto-commit and push to GitHub",
+      "4. Auto-deploy to test server 192.168.0.6",
+      "5. Test on remote server"
+    ]
+  },
+  "environment_config": {
+    "test_server_env": {
+      "FINNHUB_API_KEY": "demo_key_12345",
+      "NEWS_FETCH_INTERVAL_HOURS": "2",
+      "GEMINI_API_KEY": "demo_key",
+      "ALPHA_VANTAGE_API_KEY": "demo_key"
+    },
+    "docker_compose_config": {
+      "file": "docker-compose.yml",
+      "backend_env_file": "./backend/.env",
+      "root_env_file": "./.env"
+    }
+  },
+  "troubleshooting": {
+    "common_issues": {
+      "port_8000_in_use": "Kill docker-proxy processes: kill -9 <pid>",
+      "backend_not_starting": "Check environment variables in backend/.env",
+      "api_key_validation": "Ensure API keys are at least 10 characters long"
+    },
+    "useful_commands": {
+      "check_services": "ssh root@192.168.0.6 'cd /root/helloStockBuy && docker-compose ps'",
+      "view_logs": "ssh root@192.168.0.6 'cd /root/helloStockBuy && docker-compose logs'",
+      "restart_services": "ssh root@192.168.0.6 'cd /root/helloStockBuy && docker-compose restart'"
+    }
+  },
+  "ai_instructions": {
+    "for_next_ai_session": [
+      "This project uses remote development setup",
+      "Local machine (Cursor) only for code editing",
+      "All Docker services run on test server 192.168.0.6",
+      "Use ./quick-deploy.sh for automatic deployment",
+      "Test server runs frontend on port 3001, backend on port 8000",
+      "SSH access: ssh root@192.168.0.6",
+      "Project path on server: /root/helloStockBuy",
+      "Always check service status after deployment",
+      "Environment variables are configured for demo/testing"
+    ]
+  }
+}

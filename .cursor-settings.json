@@ -1,0 +1,52 @@
+{
+  "project": {
+    "name": "HelloStockBuy",
+    "type": "full-stack",
+    "description": "AI-Powered Investment Platform with remote development setup"
+  },
+  "development_environment": {
+    "local_machine": {
+      "purpose": "Code editing only with Cursor IDE",
+      "docker_services": "None - all services run on remote server"
+    },
+    "remote_test_server": {
+      "host": "192.168.0.6",
+      "user": "root",
+      "project_path": "/root/helloStockBuy",
+      "ssh_command": "ssh root@192.168.0.6"
+    }
+  },
+  "services": {
+    "frontend": {
+      "url": "http://192.168.0.6:3001",
+      "port": 3001,
+      "technology": "Nuxt.js"
+    },
+    "backend": {
+      "url": "http://192.168.0.6:8000",
+      "api_docs": "http://192.168.0.6:8000/docs",
+      "port": 8000,
+      "technology": "FastAPI"
+    },
+    "database": {
+      "type": "PostgreSQL",
+      "port": 5432
+    }
+  },
+  "deployment": {
+    "quick_deploy": "./quick-deploy.sh",
+    "full_deploy": "./deploy.sh test-server",
+    "auto_commit": true,
+    "auto_push": true
+  },
+  "ai_instructions": {
+    "when_helping": [
+      "Always remember this is a remote development setup",
+      "Local machine only runs Cursor for editing",
+      "All Docker services run on 192.168.0.6",
+      "Use quick-deploy.sh for automatic deployment",
+      "Check service status after any changes",
+      "Environment variables are pre-configured for testing"
+    ]
+  }
+}
