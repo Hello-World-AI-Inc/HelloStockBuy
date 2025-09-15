@@ -54,14 +54,16 @@ A comprehensive investment platform that combines real-time market data, portfol
 
 ## 🚀 Quick Start
 
-### 1. Clone the Repository
+### Option 1: Local Development (Full Stack)
+
+#### 1. Clone the Repository
 
 ```bash
-git clone https://github.com/yourusername/hellostockbuy.git
-cd hellostockbuy
+git clone https://github.com/Hello-World-AI-Inc/helloStockBuy.git
+cd helloStockBuy
 ```
 
-### 2. Environment Configuration
+#### 2. Environment Configuration
 
 Copy the example environment file and configure your settings:
 
@@ -90,13 +92,41 @@ DEFAULT_LOCALE=en
 FALLBACK_LOCALE=en
 ```
 
-### 3. Start the Application
+#### 3. Start the Application
 
 ```bash
 docker compose up -d
 ```
 
-### 4. Access the Application
+#### 4. Access the Application
+
+### Option 2: Remote Development (Recommended for Resource-Constrained Machines)
+
+**Perfect for developers who want to code locally but run tests on a remote server.**
+
+#### 1. Set up Test Server (One-time Setup)
+
+```bash
+# On your test server
+curl -fsSL https://raw.githubusercontent.com/Hello-World-AI-Inc/helloStockBuy/main/setup-test-server.sh | bash
+```
+
+#### 2. Configure GitHub Actions (One-time Setup)
+
+- Add GitHub Secrets: `TEST_SERVER_SSH_KEY`, `TEST_SERVER_USER`, `TEST_SERVER_HOST`
+- See [DEVELOPMENT_WORKFLOW.md](DEVELOPMENT_WORKFLOW.md) for detailed instructions
+
+#### 3. Local Development Workflow
+
+```bash
+# Edit code in Cursor
+# Quick deploy to test server
+./quick-deploy.sh
+```
+
+#### 4. Access Your Test Server
+
+> 📖 **For detailed remote development setup, see [DEVELOPMENT_WORKFLOW.md](DEVELOPMENT_WORKFLOW.md)**
 
 - **Frontend**: http://localhost:3001
 - **Backend API**: http://localhost:8000

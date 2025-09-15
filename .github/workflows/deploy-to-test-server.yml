@@ -1,0 +1,46 @@
+name: Deploy to Test Server
+
+on:
+  push:
+    branches: [ main, develop ]
+  workflow_dispatch: # 允許手動觸發
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup SSH
+      uses: webfactory/ssh-agent@v0.7.0
+      with:
+        ssh-private-key: ${{ secrets.TEST_SERVER_SSH_KEY }}
+        
+    - name: Deploy to test server
+      run: |
+        ssh -o StrictHostKeyChecking=no ${{ secrets.TEST_SERVER_USER }}@${{ secrets.TEST_SERVER_HOST }} '
+          cd /path/to/helloStockBuy &&
+          git pull origin main &&
+          docker-compose down &&
+          docker-compose pull &&
+          docker-compose up -d --build &&
+          docker system prune -f
+        '
+        
+    - name: Health check
+      run: |
+        sleep 30
+        ssh -o StrictHostKeyChecking=no ${{ secrets.TEST_SERVER_USER }}@${{ secrets.TEST_SERVER_HOST }} '
+          curl -f http://localhost:3001/health || exit 1
+        '
+        
+    - name: Notify deployment status
+      if: always()
+      run: |
+        if [ ${{ job.status }} == 'success' ]; then
+          echo "✅ Deployment successful! Test server is running."
+        else
+          echo "❌ Deployment failed. Check the logs."
+        fi
